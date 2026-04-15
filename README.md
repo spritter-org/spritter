@@ -4,9 +4,9 @@ Simple fuel price getter library.
 
 ## Providers
 
-### OMV, AVANTI
+### OMV, AVANTI, HOFER
 
-Browse for petrol stations on [omv.at](https://www.omv.at) or [avanti.at](https://www.avanti.at). Get the station ID (e.g. `Thalgau-AT.4518.8`) from the browser address bar.
+Browse for petrol stations on [omv.at](https://www.omv.at) [avanti.at](https://www.avanti.at) or [diskonttanken.at](https://www.diskonttanken.at/) (Hofer). Get the station ID (e.g. `Thalgau-AT.4518.8`) from the browser address bar.
 
 > Note: Prices are currently extracted via OCR, which generally works quite well. Very basic fuzzy logic is in place to extract tokens somewhat robustly in case something goes wrong during OCR.
 

@@ -42,6 +42,10 @@ OMV_BRAND_SITE_HEADERS: dict[str, dict[str, str]] = {
         "Origin": "https://www.omv.at",
         "Referer": "https://www.omv.at/",
     },
+    "HOFER": {
+        "Origin": "https://www.diskonttanken.at",
+        "Referer": "https://www.diskonttanken.at/",
+    },
 }
 
 OMV_OCR_FUEL_TERMS: dict[str, tuple[str, ...]] = {
