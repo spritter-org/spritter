@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable
-from .providers import avanti, jet, omv, hofer
+from .providers import avanti, bp, jet, omv, hofer
 from .types import FuelPriceResult, FuelStationRequest
 
 _PROVIDER_FETCHERS: dict[str, Callable[[FuelStationRequest], FuelPriceResult]] = {
@@ -9,6 +9,7 @@ _PROVIDER_FETCHERS: dict[str, Callable[[FuelStationRequest], FuelPriceResult]] =
     "omv": omv.fetch_fuel_prices,
     "avanti": avanti.fetch_fuel_prices,
     "hofer": hofer.fetch_fuel_prices,
+    "bp": bp.fetch_fuel_prices,
 }
 
 
