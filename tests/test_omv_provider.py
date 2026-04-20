@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -97,12 +98,18 @@ class TestOmvProvider(unittest.TestCase):
         ) as mocked_urlopen:
             result = omv_provider.fetch_fuel_prices(request)
             output_map = result.to_price_map()
-            
-            print(f"Expected: {expected_prices}")
-            print(f"Result: {output_map}")
 
             self.assertEqual(output_map, expected_prices)
         self.assertEqual(mocked_urlopen.call_count, 2)
+
+    def test_fetch_fuel_prices_live_api(self):
+        request = FuelStationRequest(provider="omv", station_id="Salzburg-AT.4546.8")
+
+        result = omv_provider.fetch_fuel_prices(request)
+        output_map = result.to_price_map()
+
+        self.assertIsInstance(output_map, dict)
+        self.assertGreater(len(output_map), 0)
 
 
 if __name__ == "__main__":
