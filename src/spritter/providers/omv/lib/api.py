@@ -5,7 +5,6 @@ import json
 import logging
 import re
 from . import config, types
-from difflib import SequenceMatcher
 from io import BytesIO
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -198,7 +197,7 @@ def _extract_ocr_price_map(
     logger.debug("OCR raw output station_id=%s text=%s",
                  station_id, normalized)
 
-    prices = _extract_prices_from_ocr_text(normalized)
+    prices = _extract_prices_from_ocr_text(text)
     if not prices:
         raise RuntimeError(
             f"Failed to extract fuel prices from OCR output for {brand} station '{station_id}': {normalized}"
@@ -212,16 +211,23 @@ def _extract_ocr_price_map(
 def _extract_prices_from_ocr_text(text: str) -> FuelPriceMap:
     prices: FuelPriceMap = {}
 
-    for match in config.OMV_OCR_PRICE_PATTERN.finditer(text):
-        label = _extract_label_before_price(text, match.start())
-        if not label:
-            continue
+    lines = [" ".join(line.split()) for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    if not lines:
+        return prices
 
-        key = _match_ocr_label(label)
-        if not key:
-            continue
+    # Preserve line context for label matching. If OCR collapsed everything
+    # into one line, keep compatibility by parsing the normalized full text.
+    if len(lines) == 1:
+        lines = [" ".join(text.split())]
 
-        prices[key] = float(match.group("price").replace(",", "."))
+    for line in lines:
+        for match in config.OMV_OCR_PRICE_PATTERN.finditer(line):
+            label = _extract_label_before_price(line, match.start())
+            if not label:
+                continue
+
+            prices[label] = float(match.group("price").replace(",", "."))
 
     return prices
 
@@ -234,28 +240,28 @@ def _extract_label_before_price(text: str, price_start: int) -> str | None:
     while tokens and _is_currency_token(tokens[-1]):
         tokens.pop()
 
+    while tokens and not _is_label_token(tokens[-1]):
+        tokens.pop()
+
     if not tokens:
         return None
 
-    best_suffix: str | None = None
-    best_score = 0.0
-
+    label_tokens: list[str] = []
     max_tokens = min(config.OMV_OCR_LABEL_MAX_TOKENS, len(tokens))
-    for size in range(1, max_tokens + 1):
-        candidate_tokens = tokens[-size:]
-        candidate = " ".join(candidate_tokens).strip()
-        if not candidate:
-            continue
 
-        score = _score_ocr_label(candidate)
-        if score > best_score:
-            best_score = score
-            best_suffix = candidate
+    for token in reversed(tokens[-max_tokens:]):
+        if not _is_label_token(token):
+            break
+        label_tokens.append(token)
 
-    if best_suffix is None or best_score < config.OMV_OCR_LABEL_MATCH_THRESHOLD:
+    if not label_tokens:
         return None
 
-    return best_suffix
+    normalized_tokens = _normalize_label_tokens(reversed(label_tokens))
+    if not normalized_tokens:
+        return None
+
+    return " ".join(normalized_tokens)
 
 
 def _is_label_token(token: str) -> bool:
@@ -287,37 +293,19 @@ def _is_currency_token(token: str) -> bool:
     return normalized.casefold() in config.OMV_OCR_CURRENCY_TOKENS
 
 
-def _match_ocr_label(label: str) -> str | None:
-    best_key: str | None = None
-    best_score = 0.0
-    label_normalized = label.casefold()
+def _normalize_label_tokens(tokens) -> list[str]:
+    normalized_tokens: list[str] = []
+    for token in tokens:
+        if not isinstance(token, str):
+            continue
+        normalized = token.strip().strip(",;:|()")
+        if not normalized:
+            continue
+        if normalized.casefold() in config.OMV_OCR_STOP_TOKENS:
+            continue
+        normalized_tokens.append(normalized)
 
-    for key, aliases in config.OMV_OCR_FUEL_TERMS.items():
-        for alias in aliases:
-            score = SequenceMatcher(
-                None, label_normalized, alias.casefold()).ratio()
-            if score > best_score:
-                best_score = score
-                best_key = key
-
-    if best_key is None or best_score < config.OMV_OCR_LABEL_MATCH_THRESHOLD:
-        return None
-
-    return best_key
-
-
-def _score_ocr_label(label: str) -> float:
-    label_normalized = label.casefold()
-    best_score = 0.0
-
-    for aliases in config.OMV_OCR_FUEL_TERMS.values():
-        for alias in aliases:
-            score = SequenceMatcher(
-                None, label_normalized, alias.casefold()).ratio()
-            if score > best_score:
-                best_score = score
-
-    return best_score
+    return normalized_tokens
 
 
 def _decode_price_image(price_url: str) -> bytes:
