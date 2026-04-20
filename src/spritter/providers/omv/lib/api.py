@@ -4,7 +4,7 @@ import base64
 import json
 import logging
 import re
-from . import config, types
+from . import config, types, ocr_correction
 from io import BytesIO
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -202,6 +202,8 @@ def _extract_ocr_price_map(
         raise RuntimeError(
             f"Failed to extract fuel prices from OCR output for {brand} station '{station_id}': {normalized}"
         )
+
+    prices = ocr_correction.normalize_ocr_labels(prices, text)
 
     logger.debug("OCR parsed prices station_id=%s prices=%s",
                  station_id, prices)

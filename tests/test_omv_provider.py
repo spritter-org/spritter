@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -94,18 +95,14 @@ class TestOmvProvider(unittest.TestCase):
             "spritter.providers.omv.lib.api.urlopen",
             side_effect=_build_fake_urlopen(price_url),
         ) as mocked_urlopen:
-            with patch(
-                "spritter.providers.omv.lib.api.pytesseract.image_to_string",
-                return_value=ocr_text,
-            ) as mocked_ocr:
-                result = omv_provider.fetch_fuel_prices(request)
-
+            result = omv_provider.fetch_fuel_prices(request)
             output_map = result.to_price_map()
-            print(output_map)
+            
+            print(f"Expected: {expected_prices}")
+            print(f"Result: {output_map}")
 
             self.assertEqual(output_map, expected_prices)
         self.assertEqual(mocked_urlopen.call_count, 2)
-        mocked_ocr.assert_called_once()
 
 
 if __name__ == "__main__":
