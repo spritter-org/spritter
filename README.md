@@ -25,6 +25,16 @@ Browse for petrol stations on [omv.at](https://www.omv.at) [avanti.at](https://w
 pip install -e .
 ```
 
+## Development / Testing
+
+Run the test suite with:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+OMV OCR tests use fixtures in `tests/fixtures/omv/`. The PNG there is mocked as the provider's `priceUrl`, and the matching OCR text file is used as the expected OCR output.
+
 ## Usage
 
 ```python
