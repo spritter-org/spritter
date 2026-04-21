@@ -102,8 +102,9 @@ class OcrService:
     """Handles OCR extraction and intelligent parsing of price maps."""
     
     PRICE_PATTERN = re.compile(r"(?P<price>\d[.,]\d{2,3})")
+    HEADER_PATTERN = re.compile(r"(?i)(?:datum|zeit|date|time)[^\d]*\d{4}[-./]\d{2}[-./]\d{2}(?:\s+\d{1,2}[:.]\d{2}(?:[:.]\d{2})?)?")
     CURRENCY_TOKENS = {"eur", "euro", "€", "lei", "ron", "huf", "ft"}
-    STOP_TOKENS = {"datum", "zeit", "date", "time", "preis", "price", "eur", "euro"}
+    STOP_TOKENS = {"datum", "zeit", "datum/zeit", "date", "time", "preis", "price", "eur", "euro"}
 
     def __init__(self, corrector: OcrCorrector | None = None, max_label_tokens: int = 4):
         self.corrector = corrector or OcrCorrector()
@@ -130,6 +131,7 @@ class OcrService:
         return Image.alpha_composite(white_bg, image).convert("RGB")
 
     def _parse_prices(self, text: str) -> dict[str, float]:
+        text = self.HEADER_PATTERN.sub(" ", text)
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         prices = {}
         
@@ -244,9 +246,18 @@ class OcrService:
         raw_tokens = text.split()
         tokens = []
         for t in raw_tokens:
-            clean = t.strip(",;:|()")
-            if clean and clean.casefold() not in self.STOP_TOKENS and not re.fullmatch(r"\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?", clean):
-                tokens.append(clean)
+            clean = re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", t)
+            if not clean:
+                continue
+                
+            lower_clean = clean.casefold()
+            if lower_clean in self.STOP_TOKENS or "datum" in lower_clean or "zeit" in lower_clean:
+                continue
+                
+            if re.fullmatch(r"\d{4}[-./]\d{2}[-./]\d{2}|\d{1,2}[:.]\d{2}(?:[:.]\d{2})?", clean):
+                continue
+                
+            tokens.append(clean)
         return tokens
 
     def _extract_label_before(self, text: str, pos: int) -> str | None:
