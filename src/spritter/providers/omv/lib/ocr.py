@@ -113,10 +113,11 @@ class OcrService:
     def extract_from_base64_url(self, price_url: str) -> dict[str, float]:
         image_bytes = self._decode_image(price_url)
         image = self._prepare_image(image_bytes)
-        text = pytesseract.image_to_string(image)
-        normalized_text = " ".join(text.split())
         
-        prices = self._parse_prices(normalized_text)
+        # Use PSM 6 (Assume a single uniform block of text) to maintain row structure consistently
+        text = pytesseract.image_to_string(image, config="--psm 6")
+        
+        prices = self._parse_prices(text)
         return self.corrector.correct_map(prices, text)
 
     def _decode_image(self, price_url: str) -> bytes:
@@ -128,7 +129,10 @@ class OcrService:
     def _prepare_image(self, image_bytes: bytes) -> Image.Image:
         image = Image.open(BytesIO(image_bytes)).convert("RGBA")
         white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
-        return Image.alpha_composite(white_bg, image).convert("RGB")
+        merged = Image.alpha_composite(white_bg, image).convert("RGB")
+        
+        # Upscale by 2x to significantly improve OCR precision on small/thin numbers across OS libs
+        return merged.resize((merged.width * 2, merged.height * 2), getattr(Image, 'Resampling', Image).LANCZOS)
 
     def _parse_prices(self, text: str) -> dict[str, float]:
         text = self.HEADER_PATTERN.sub(" ", text)
@@ -138,15 +142,19 @@ class OcrService:
         # Try line-by-line matching first
         if len(lines) > 1:
             for line in lines:
+                last_end = 0
                 for match in self.PRICE_PATTERN.finditer(line):
-                    label = self._extract_label_before(line, match.start())
+                    # Only parse tokens between the previous price and the current price
+                    chunk = line[last_end:match.start()]
+                    label = self._extract_label_before(chunk, len(chunk))
                     if label:
                         prices[label] = float(match.group("price").replace(",", "."))
+                    last_end = match.end()
                         
         if prices:
             return prices
             
-        # Fallback to flat line parsing if OCR collapsed the layout
+        # Fallback to flat line parsing if OCR collapsed the layout completely
         flat_text = " ".join(lines)
         return self._parse_flat_line(flat_text)
 
