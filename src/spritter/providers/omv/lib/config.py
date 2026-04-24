@@ -48,11 +48,6 @@ OMV_BRAND_SITE_HEADERS: dict[str, dict[str, str]] = {
     },
 }
 
-OMV_OCR_FUEL_TERMS: dict[str, tuple[str, ...]] = {
-    "Diesel": ("DIESEL",),
-    "Diesel Plus": ("Diesel Plus", "DIESEL PLUS"),
-    "Super 95": ("SUPER 95", "SUPER95"),
-}
 OMV_OCR_PRICE_PATTERN = re.compile(
     r"(?P<price>\d+[.,]\d{2,3})(?:\s*(?:EUR|€))?\b",
     re.IGNORECASE,
@@ -60,4 +55,3 @@ OMV_OCR_PRICE_PATTERN = re.compile(
 OMV_OCR_STOP_TOKENS = {"date", "time", "date/time", "ocr"}
 OMV_OCR_CURRENCY_TOKENS = {"eur", "€"}
 OMV_OCR_LABEL_MAX_TOKENS = 4
-OMV_OCR_LABEL_MATCH_THRESHOLD = 0.72
