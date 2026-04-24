@@ -14,10 +14,15 @@ Browse for petrol stations on [jet-austria.at](https://www.jet-austria.at). Get 
 
 ### OMV, AVANTI, HOFER
 
-Browse for petrol stations on [omv.at](https://www.omv.at) [avanti.at](https://www.avanti.at) or [diskonttanken.at](https://www.diskonttanken.at/) (Hofer). Get the station ID (e.g. `Thalgau-AT.4518.8`) from the browser address bar.
+Browse for petrol stations on the lists down below. Get the station ID (e.g. `Thalgau-AT.4518.8`) from the browser address bar after you click the link.
+
+List of petrol stations:
+
+- [OMV](https://www.omv.at/de/mobilitaet/kraftstoffe/tankstelle-finden?id=oesterreich)
+- [Avanti](https://www.avanti.at/de/tankstellensuche?id=oesterreich)
+- [Hofer (diskonttanken.at)](https://www.diskonttanken.at/de/tankstellensuche?id=oesterreich)
 
 > Note: Prices are currently extracted via OCR, which generally works quite well. Very basic fuzzy logic is in place to extract tokens somewhat robustly in case something goes wrong during OCR.
-
 
 ## Install
 
