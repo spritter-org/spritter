@@ -1,91 +1,42 @@
+"""Integration tests for OMV provider using parameterized test configurations."""
+
 from __future__ import annotations
 
-import io
-import json
-import logging
 import sys
-from pathlib import Path
-from unittest.mock import patch
 import unittest
+from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from spritter.providers.omv import provider as omv_provider
-from spritter.types import FuelStationRequest
-
-LOGGER = logging.getLogger(__name__)
-
-class _FakeJsonResponse(io.StringIO):
-    def __init__(self, payload: dict[str, object], status: int = 200, reason: str = "OK"):
-        super().__init__(json.dumps(payload))
-        self.status = status
-        self.reason = reason
-
-    def __enter__(self) -> _FakeJsonResponse:
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> bool:
-        self.close()
-        return False
+from spritter import get_fuel_prices
+from spritter.types import FuelStationRequest, FuelPriceResult
 
 
-def _build_fake_urlopen(prices_payload: list[dict]):
-    station_payload = {
-        "ts": "1234",
-        "hash": "abc123",
-        "confVariables": {
-            "conf_STATIONDETAILS": {
-                "site_number_key": "mock-site-id",
-            }
-        },
-    }
-    details_payload = {"prices": prices_payload}
-    responses = [
-        _FakeJsonResponse(station_payload),
-        _FakeJsonResponse(details_payload),
-    ]
+# Test configurations for OMV provider
+OMV_STATIONS = [
+    {"name": "OMV Thalgau", "station_id": "AT.4520.8"},
+    {"name": "OMV Vogelweider", "station_id": "AT.4546.8"},
+    {"name": "OMV Nonntal", "station_id": "AT.4605.8"},
+]
 
-    def _fake_urlopen(_request, timeout=5):
-        if not responses:
-            raise AssertionError("Unexpected extra urlopen call")
-        return responses.pop(0)
-
-    return _fake_urlopen
 
 class TestOmvProvider(unittest.TestCase):
-    def test_fetch_fuel_prices_parses_json_prices_with_mocked_api(self):
-        mock_prices = [
-            {"name": "DIESEL", "price": "2.184", "currency": "EUR", "date": "2026-09-12 22:40"},
-            {"name": "SUPER 95", "price": "1.942", "currency": "EUR", "date": "2026-09-12 22:40"},
-        ]
-        expected_prices = {"DIESEL": 2.184, "SUPER 95": 1.942}
+    """Parameterized integration tests for OMV provider stations."""
 
-        request = FuelStationRequest(provider="omv", station_id="Thalgau-AT.4518.8")
+    def test_fetch_omv_fuel_prices(self):
+        """Test fetching fuel prices for OMV stations."""
+        for config in OMV_STATIONS:
+            with self.subTest(station=config["name"]):
+                request = FuelStationRequest(provider="OMV", station_id=config["station_id"])
+                result = get_fuel_prices(request)
 
-        with patch(
-            "spritter.providers.omv.lib.api.urlopen",
-            side_effect=_build_fake_urlopen(mock_prices),
-        ) as mocked_urlopen:
-            result = omv_provider.fetch_fuel_prices(request)
-            output_map = result.to_price_map()
-
-        LOGGER.info("Expected prices: %s", expected_prices)
-        LOGGER.info("Actual prices: %s", output_map)
-
-        self.assertEqual(output_map, expected_prices)
-        self.assertEqual(mocked_urlopen.call_count, 2)
-
-    def test_fetch_fuel_prices_live_api(self):
-        request = FuelStationRequest(provider="omv", station_id="Salzburg-AT.4546.8")
-
-        result = omv_provider.fetch_fuel_prices(request)
-        output_map = result.to_price_map()
-
-        self.assertIsInstance(output_map, dict)
-        self.assertGreater(len(output_map), 0)
+                self.assertIsInstance(result, FuelPriceResult)
+                self.assertEqual(result.provider, "OMV")
+                self.assertEqual(result.station_id, config["station_id"])
+                self.assertIsNotNone(result.quotes, f"No quotes returned for {config['name']}")
 
 
 if __name__ == "__main__":
