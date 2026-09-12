@@ -24,6 +24,8 @@ List of petrol stations:
 
 > Note: Prices are currently extracted via OCR, which generally works quite well. Very basic fuzzy logic is in place to extract tokens somewhat robustly in case something goes wrong during OCR.
 
+OMV OCR also requires the system Tesseract binary to be installed and available on PATH. On Debian/Ubuntu, install `tesseract-ocr`. On macOS, install `tesseract` with Homebrew.
+
 ## Install
 
 ```bash

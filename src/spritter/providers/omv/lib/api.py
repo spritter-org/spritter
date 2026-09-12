@@ -25,11 +25,13 @@ def fetch_fuel_prices(request: FuelStationRequest, brand: str = "OMV") -> FuelPr
     
     price_url = details.get("priceUrl")
     prices = {}
-    
+
     if price_url:
+        logger.info("Requesting OMV OCR fuel-price URL for station '%s' (%s): %s", station_id, normalized_brand, price_url)
         ocr_service = OcrService(corrector=OcrCorrector())
         try:
             prices = ocr_service.extract_from_base64_url(price_url)
+            logger.debug("Parsed OMV OCR fuel prices for station '%s' (%s): %s", station_id, normalized_brand, prices)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to extract fuel prices from OCR output for {normalized_brand} station '{station_id}': {e}"
@@ -48,20 +50,22 @@ def _get_station_info(station_id: str, brand: str, user_agent: str) -> types.Omv
     query = {**config.OMV_DEFAULT_QUERY, "BRAND": brand, "STATIONID": station_id}
     url = f"{config.OMV_BASE_URL}?{urlencode(query)}"
     headers = _build_request_headers(brand, user_agent)
-    
+    logger.info("Requesting OMV station info URL for station '%s' (%s): %s", station_id, brand, url)
+
     try:
         with urlopen(Request(url, headers=headers, method="POST"), timeout=5) as response:
             payload = json.load(response)
-            
+            logger.debug("Parsed OMV station info payload for station '%s' (%s): %s", station_id, brand, payload)
+
             ts = str(payload.get("ts", "")).strip()
             hash_val = str(payload.get("hash", "")).strip()
             site_key = str(payload.get("confVariables", {}).get("conf_STATIONDETAILS", {}).get("site_number_key", "")).strip()
-            
+
             if not all([ts, hash_val, site_key]):
                 raise RuntimeError("Station info payload missing required fields")
-                
+
             return types.OmvStationInfo(ts=ts, hash_value=hash_val, site_number_key=site_key)
-            
+
     except Exception as exc:
         raise RuntimeError(f"Failed to fetch station info for {brand} station '{station_id}': {exc}") from exc
 
@@ -74,15 +78,20 @@ def _fetch_station_details(station_id: str, brand: str, info: types.OmvStationIn
         "HASH": info.hash_value,
         "TS": info.ts,
     }
-    
+
     headers = {
         **_build_request_headers(brand, user_agent),
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    
+    details_url = config.OMV_DETAILS_URL
+    logger.info("Requesting OMV station details URL for station '%s' (%s): %s", station_id, brand, details_url)
+    logger.debug("OMV station details request payload for station '%s' (%s): %s", station_id, brand, query)
+
     try:
-        with urlopen(Request(config.OMV_DETAILS_URL, data=urlencode(query).encode("utf-8"), headers=headers, method="POST"), timeout=5) as response:
-            return json.load(response)
+        with urlopen(Request(details_url, data=urlencode(query).encode("utf-8"), headers=headers, method="POST"), timeout=5) as response:
+            payload = json.load(response)
+            logger.debug("Parsed OMV station details payload for station '%s' (%s): %s", station_id, brand, payload)
+            return payload
     except Exception as exc:
         raise RuntimeError(f"Failed to fetch station details for {brand} station '{station_id}': {exc}") from exc
 

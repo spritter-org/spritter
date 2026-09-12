@@ -35,7 +35,7 @@ def _fetch_station_payload(station_id: str) -> dict[str, object]:
         "format": "json",
     }
     request_url = f"{config.BP_BASE_URL.format(station_id=station_id)}?{urlencode(query)}"
-    logger.debug("Requesting BP station data: %s", request_url)
+    logger.info("Requesting BP station data URL for station '%s': %s", station_id, request_url)
 
     headers = {
         **config.BP_HEADERS,
@@ -46,6 +46,7 @@ def _fetch_station_payload(station_id: str) -> dict[str, object]:
     try:
         with urlopen(request, timeout=6) as response:
             payload = json.load(response)
+            logger.debug("Parsed BP station payload for station '%s': %s", station_id, payload)
     except Exception as exc:
         raise RuntimeError(
             f"Failed to fetch BP station data for '{station_id}': {exc}"
