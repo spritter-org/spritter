@@ -16,15 +16,13 @@ Browse for petrol stations on [jet-austria.at](https://www.jet-austria.at). Get 
 
 Browse for petrol stations on the lists down below. Get the station ID (e.g. `Thalgau-AT.4518.8`) from the browser address bar after you click the link.
 
+> **Note:** As per the current OMV API update, strip the site ID prefix before entering it into Spritter. For example, `Thalgau-AT.4518.8` must be entered as `AT.4518.8`
+
 List of petrol stations:
 
 - [OMV](https://www.omv.at/de/mobilitaet/kraftstoffe/tankstelle-finden?id=oesterreich)
 - [Avanti](https://www.avanti.at/de/tankstellensuche?id=oesterreich)
 - [Hofer (diskonttanken.at)](https://www.diskonttanken.at/de/tankstellensuche?id=oesterreich)
-
-> Note: Prices are currently extracted via OCR, which generally works quite well. Very basic fuzzy logic is in place to extract tokens somewhat robustly in case something goes wrong during OCR.
-
-OMV OCR also requires the system Tesseract binary to be installed and available on PATH. On Debian/Ubuntu, install `tesseract-ocr`. On macOS, install `tesseract` with Homebrew.
 
 ## Install
 
@@ -37,10 +35,8 @@ pip install -e .
 Run the test suite with:
 
 ```bash
-python -m unittest discover -s tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
-
-OMV OCR tests use fixtures in `tests/fixtures/omv/`. The PNG there is mocked as the provider's `priceUrl`, and the matching OCR text file is used as the expected OCR output.
 
 ## Usage
 
