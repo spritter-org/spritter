@@ -35,17 +35,19 @@ def fetch_fuel_prices(station_id : str) -> FuelPriceMap:
         raise RuntimeError("JET station id must not be empty")
 
     request_url = config.JET_STATION_URL.format(station_id=station_id)
-
-    logger.debug("Requesting JET station data: %s", request_url)
+    logger.info("Requesting JET station data URL for station '%s': %s", station_id, request_url)
 
     headers = {**config.JET_HEADERS}
     http_request = Request(request_url, headers=headers, method="GET")
     try:
         with urlopen(http_request, timeout=6, context=ssl._create_unverified_context()) as response:
             payload = json.load(response)
+            logger.debug("Parsed JET station payload for station '%s': %s", station_id, payload)
     except Exception as exc:
         raise RuntimeError(
             f"Failed to fetch JET station data for '{station_id}': {exc}"
         ) from exc
 
-    return _parse_fuel_prices(payload=payload, station_id=station_id)
+    prices = _parse_fuel_prices(payload=payload, station_id=station_id)
+    logger.debug("Parsed JET fuel prices for station '%s': %s", station_id, prices)
+    return prices
