@@ -17,8 +17,8 @@ from spritter.types import FuelStationRequest, FuelPriceResult
 
 # Test configurations for Hofer provider
 HOFER_STATIONS = [
-    {"name": "Hofer Wals", "station_id": "Wals-AT.4009.8"},
-    {"name": "Hofer Hallwang", "station_id": "Hallwang-AT.4014.8"},
+    {"name": "Hofer Wals", "station_id": "AT.4009.8", "min_prices": 1},
+    {"name": "Hofer Hallwang", "station_id": "AT.4014.8", "min_prices": 1},
 ]
 
 
@@ -36,6 +36,11 @@ class TestHoferProvider(unittest.TestCase):
                 self.assertEqual(result.provider, "Hofer")
                 self.assertEqual(result.station_id, config["station_id"])
                 self.assertIsNotNone(result.quotes, f"No quotes returned for {config['name']}")
+                self.assertGreaterEqual(
+                    len(result.quotes),
+                    config.get("min_prices", 1),
+                    f"Expected at least {config.get('min_prices', 1)} prices for {config['name']}, got {len(result.quotes)}",
+                )
 
 
 if __name__ == "__main__":

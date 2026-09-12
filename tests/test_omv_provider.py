@@ -17,9 +17,9 @@ from spritter.types import FuelStationRequest, FuelPriceResult
 
 # Test configurations for OMV provider
 OMV_STATIONS = [
-    {"name": "OMV Thalgau", "station_id": "AT.4520.8"},
-    {"name": "OMV Vogelweider", "station_id": "AT.4546.8"},
-    {"name": "OMV Nonntal", "station_id": "AT.4605.8"},
+    {"name": "OMV Thalgau", "station_id": "AT.4520.8", "min_prices": 0},
+    {"name": "OMV Vogelweider", "station_id": "AT.4546.8", "min_prices": 1},
+    {"name": "OMV Nonntal", "station_id": "AT.4605.8", "min_prices": 1},
 ]
 
 
@@ -37,6 +37,11 @@ class TestOmvProvider(unittest.TestCase):
                 self.assertEqual(result.provider, "OMV")
                 self.assertEqual(result.station_id, config["station_id"])
                 self.assertIsNotNone(result.quotes, f"No quotes returned for {config['name']}")
+                self.assertGreaterEqual(
+                    len(result.quotes),
+                    config.get("min_prices", 1),
+                    f"Expected at least {config.get('min_prices', 1)} prices for {config['name']}, got {len(result.quotes)}",
+                )
 
 
 if __name__ == "__main__":
