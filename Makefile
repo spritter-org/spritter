@@ -26,12 +26,12 @@ install-dev:
 # Unit tests (mocked API tests with fixtures)
 test-unit:
 	@echo "Running unit tests (OMV provider OCR parsing with fixtures)..."
-	python -m unittest tests.test_omv_provider -v
+	python -m unittest tests.test_omv_provider_mock -v
 
 # Integration tests (live API calls)
 test-omv:
 	@echo "Running OMV provider integration tests..."
-	python -m unittest tests.test_omv_provider_integration -v
+	python -m unittest tests.test_omv_provider -v
 
 test-hofer:
 	@echo "Running Hofer provider integration tests..."
